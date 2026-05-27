@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>あなたの写真タイプ診断</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);--text:#f0eee8;--text-muted:#888790;--text-dim:#555462;--accent:#c8a96e;--accent2:#8b6fcb;--grad1:linear-gradient(160deg,#1a0e2e 0%,#0a0a0f 50%,#0d1a1a 100%);}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;}
+.screen{display:none;position:relative;z-index:1;}
+.screen.active{display:block;}
+
+/* HERO */
+#screen-hero{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem 2rem;background:var(--grad1);text-align:center;}
+.hero-eyebrow{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:1.8rem;opacity:0.8;}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,9vw,4rem);line-height:1.2;margin-bottom:1.2rem;background:linear-gradient(135deg,#f0eee8 0%,#c8a96e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:clamp(0.85rem,3.5vw,1rem);color:var(--text-muted);line-height:1.9;max-width:340px;margin:0 auto 2rem;}
+.hero-meta{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-bottom:2.5rem;}
+.hero-meta span{font-size:11px;color:var(--text-dim);padding:0.4rem 0.8rem;border:1px solid var(--border);}
+.hero-meta strong{color:var(--text-muted);}
+.btn-start{padding:1rem 3rem;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'Noto Sans JP',sans-serif;font-size:1rem;letter-spacing:2px;cursor:pointer;position:relative;overflow:hidden;transition:all 0.4s;min-width:200px;-webkit-appearance:none;}
+.btn-start::before{content:'';position:absolute;inset:0;background:var(--accent);transform:translateX(-101%);transition:transform 0.35s;}
+.btn-start:hover::before,.btn-start:active::before{transform:translateX(0);}
+.btn-start:hover,.btn-start:active{color:var(--bg);}
+.btn-start span{position:relative;z-index:1;}
+.deco-line{width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(--accent),transparent);margin-top:3rem;opacity:0.3;}
+
+/* QUIZ */
+#screen-quiz{min-height:100vh;min-height:100dvh;}
+.quiz-header{position:fixed;top:0;left:0;right:0;z-index:100;padding:0.9rem 1.2rem;background:rgba(10,10,15,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding-top:max(0.9rem,env(safe-area-inset-top));}
+.quiz-logo{font-family:'Playfair Display',serif;font-size:0.95rem;color:var(--accent);}
+.quiz-progress-wrap{display:flex;align-items:center;gap:0.75rem;}
+.quiz-progress-bar{width:120px;height:2px;background:var(--surface2);overflow:hidden;}
+.quiz-progress-fill{height:100%;background:var(--accent);transition:width 0.5s ease;width:0%;}
+.quiz-progress-label{font-size:11px;color:var(--text-dim);}
+.quiz-body{padding:calc(52px + env(safe-area-inset-top) + 1.5rem) 1.2rem calc(1.5rem + env(safe-area-inset-bottom)) 1.2rem;max-width:600px;margin:0 auto;}
+.question-number{font-size:10px;letter-spacing:3px;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;}
+.question-text{font-family:'Playfair Display',serif;font-size:clamp(1.1rem,4.5vw,1.6rem);line-height:1.55;margin-bottom:1.8rem;color:var(--text);}
+.options-grid{display:flex;flex-direction:column;gap:0.55rem;}
+.option-btn{padding:0.9rem 1.1rem;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;font-size:clamp(0.8rem,3.3vw,0.9rem);line-height:1.6;cursor:pointer;text-align:left;transition:all 0.2s;position:relative;width:100%;-webkit-appearance:none;border-radius:0;min-height:50px;}
+.option-btn .opt-label{font-size:9px;letter-spacing:2px;color:var(--text-dim);display:block;margin-bottom:0.2rem;}
+.option-btn:active{background:rgba(200,169,110,0.1);border-color:var(--accent);}
+.option-btn.selected{border-color:var(--accent);background:rgba(200,169,110,0.12);color:var(--text);}
+.option-btn.selected::after{content:'✓';position:absolute;right:1rem;top:50%;transform:translateY(-50%);color:var(--accent);font-size:0.9rem;}
+.quiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:2rem;gap:0.75rem;}
+.btn-prev{padding:0.75rem 1.2rem;background:transparent;border:1px solid var(--border2);color:var(--text-muted);cursor:pointer;font-size:0.85rem;transition:all 0.2s;font-family:'Noto Sans JP',sans-serif;-webkit-appearance:none;border-radius:0;min-height:46px;min-width:80px;}
+.btn-next{flex:1;padding:0.85rem 1.5rem;background:var(--accent);border:none;color:#0a0a0f;cursor:pointer;font-size:0.9rem;font-weight:500;font-family:'Noto Sans JP',sans-serif;transition:all 0.25s;opacity:0.35;pointer-events:none;-webkit-appearance:none;border-radius:0;min-height:46px;}
+.btn-next.enabled{opacity:1;pointer-events:all;}
+
+/* RESULT */
+#screen-result{background:var(--grad1);}
+.result-hero{padding:3.5rem 1.5rem 2rem;text-align:center;}
+.result-type-label{font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:0.8rem;}
+.result-type-name{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,7vw,3.2rem);background:linear-gradient(135deg,#f0eee8 0%,#c8a96e 60%,#8b6fcb 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1.2rem;line-height:1.25;}
+.result-desc{font-size:clamp(0.88rem,3.5vw,1rem);color:var(--text-muted);line-height:2;max-width:480px;margin:0 auto 2.5rem;}
+.result-body{max-width:680px;margin:0 auto;padding:0 1.2rem calc(3rem + env(safe-area-inset-bottom));}
+.chart-card{background:var(--surface);border:1px solid var(--border);padding:1.5rem 1.2rem;margin-bottom:1.2rem;}
+.chart-card h3{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:1.2rem;}
+
+/* レーダーチャートを大きく */
+.chart-wrap{position:relative;height:min(380px,90vw);width:100%;margin:0 auto;}
+
+.axis-row{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;}
+.axis-label{font-size:11px;color:var(--text-muted);width:70px;flex-shrink:0;}
+.axis-track{flex:1;height:5px;background:var(--surface2);position:relative;}
+.axis-fill{height:100%;position:absolute;left:0;background:var(--accent2);transition:width 1.2s ease;}
+.axis-pct{font-size:11px;color:var(--text-dim);width:32px;text-align:right;}
+.scores-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.2rem;}
+@media(max-width:360px){.scores-grid{grid-template-columns:1fr;}}
+.score-card{background:var(--surface);border:1px solid var(--border);padding:1rem;}
+.score-axis{font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:0.4rem;}
+.score-val{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--text);margin-bottom:0.4rem;}
+.score-bar-bg{height:3px;background:var(--surface2);}
+.score-bar-fill{height:100%;background:var(--accent);}
+.score-meaning{font-size:11px;color:var(--text-dim);margin-top:0.4rem;line-height:1.5;}
+.traits-wrap{margin-bottom:1.5rem;}
+.traits-wrap h3{font-size:10px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:1rem;}
+.traits-list{display:flex;flex-wrap:wrap;gap:0.5rem;}
+.trait-tag{padding:0.35rem 0.85rem;border:1px solid var(--border2);color:var(--text-muted);font-size:12px;}
+.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:2rem;}
+.result-actions .btn-share:first-child{grid-column:1/-1;}
+.btn-share{padding:0.9rem 1rem;cursor:pointer;font-size:0.88rem;font-family:'Noto Sans JP',sans-serif;transition:all 0.2s;-webkit-appearance:none;border-radius:0;min-height:48px;text-align:center;}
+.btn-share.primary{background:var(--accent);border:none;color:#0a0a0f;font-weight:500;}
+.btn-share.secondary{background:transparent;border:1px solid var(--border2);color:var(--text-muted);}
+.other-types{margin-bottom:2.5rem;}
+.other-types h3{font-size:10px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:1rem;}
+.type-pills{display:flex;flex-wrap:wrap;gap:0.5rem;}
+.type-pill{padding:0.45rem 0.9rem;border:1px solid var(--border);color:var(--text-dim);font-size:12px;cursor:pointer;transition:all 0.2s;min-height:36px;display:flex;align-items:center;}
+.type-pill.is-you{border-color:var(--accent);color:var(--accent);}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;padding:0;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-top:1px solid var(--border2);padding:1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom));width:100%;max-height:70vh;overflow-y:auto;border-radius:16px 16px 0 0;position:relative;}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.2rem;}
+.modal-box h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:0.5rem;color:var(--text);}
+.modal-box p{color:var(--text-muted);font-size:0.88rem;line-height:1.8;margin-bottom:0.75rem;}
+.modal-close{position:absolute;top:1rem;right:1.2rem;background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;padding:0.3rem;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;}
+.toast{position:fixed;bottom:calc(1.5rem + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--accent);color:var(--accent);padding:0.75rem 1.5rem;font-size:0.85rem;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.anim-in{animation:fadeUp 0.45s ease both;}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div id="screen-hero" class="screen active">
+  <p class="hero-eyebrow">Photography Personality</p>
+  <h1 class="hero-title">あなたの<br>写真スタイル診断</h1>
+  <p class="hero-sub">24の質問に答えて、あなた固有の「写真との関係性」を分析します。MBTIのように6軸でスコアを可視化。</p>
+  <div class="hero-meta">
+    <span>所要時間 <strong>約4分</strong></span>
+    <span>質問数 <strong>24問</strong></span>
+    <span>タイプ数 <strong>14種類</strong></span>
+  </div>
+  <button class="btn-start" onclick="startQuiz()"><span>診断を始める</span></button>
+  <div class="deco-line"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen">
+  <div class="quiz-header">
+    <div class="quiz-logo">Photo Type</div>
+    <div class="quiz-progress-wrap">
+      <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progressFill"></div></div>
+      <div class="quiz-progress-label" id="progressLabel">1 / 24</div>
+    </div>
+  </div>
+  <div class="quiz-body">
+    <div class="question-number" id="qNumber">Q 01</div>
+    <div class="question-text" id="qText"></div>
+    <div class="options-grid" id="optionsGrid"></div>
+    <div class="quiz-nav">
+      <button class="btn-prev" onclick="prevQ()">← 戻る</button>
+      <button class="btn-next" id="btnNext" onclick="nextQ()">次へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-hero">
+    <div class="result-type-label">Your Photo Type</div>
+    <div class="result-type-name" id="resultTypeName"></div>
+    <div class="result-desc" id="resultDesc"></div>
+  </div>
+  <div class="result-body">
+    <div class="chart-card">
+      <h3>6軸スコア — Radar Chart</h3>
+      <div class="chart-wrap">
+        <canvas id="radarChart" role="img" aria-label="6軸のレーダーチャート"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>軸ごとの傾向</h3>
+      <div id="axisRows"></div>
+    </div>
+    <div class="scores-grid" id="scoresGrid"></div>
+    <div class="traits-wrap">
+      <h3>あなたの特性キーワード</h3>
+      <div class="traits-list" id="traitsList"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-share primary" onclick="copyResult()">結果をコピーしてシェア</button>
+      <button class="btn-share secondary" onclick="showSendModal()">📤 主宰者に結果を送る</button>
+      <button class="btn-share secondary" onclick="retakeQuiz()">もう一度</button>
+      <button class="btn-share secondary" onclick="showAllTypes()">全タイプを見る</button>
+    </div>
+    <div class="other-types">
+      <h3>全タイプ一覧</h3>
+      <div class="type-pills" id="typePills"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 送る -->
+<div class="modal-overlay" id="modalSend" onclick="closeModalByOverlay(event,'modalSend')">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModalById('modalSend')">×</button>
+    <h2>主宰者に結果を送る</h2>
+    <p style="color:var(--accent);font-size:13px;margin-bottom:1rem;">① 下のボタンでJSONをコピー</p>
+    <button class="btn-share primary" style="width:100%;margin-bottom:1.2rem;" onclick="copyJSON()">📋 JSONデータをコピーする</button>
+    <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:0.5rem;">② コピーしたデータを<br><strong style="color:var(--text)">LINEやDM</strong>で主宰者に貼り付けて送信</p>
+    <p style="color:var(--text-dim);font-size:11px;line-height:1.8;">※ 数字の羅列が表示されますが正常です<br>※ そのままコピーして送るだけでOKです</p>
+    <div id="jsonPreview" style="margin-top:1rem;background:var(--surface2);padding:0.75rem;font-family:monospace;font-size:11px;color:var(--text-dim);line-height:1.6;word-break:break-all;max-height:100px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- MODAL: all types -->
+<div class="modal-overlay" id="modalAllTypes" onclick="closeModalByOverlay(event,'modalAllTypes')">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModalById('modalAllTypes')">×</button>
+    <h2>全タイプ</h2>
+    <div id="modalTypeList"></div>
+  </div>
+</div>
+
+<!-- MODAL: type detail -->
+<div class="modal-overlay" id="modalTypeDetail" onclick="closeModalByOverlay(event,'modalTypeDetail')">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModalById('modalTypeDetail')">×</button>
+    <h2 id="detailTypeName"></h2>
+    <p id="detailTypeDesc"></p>
+    <p id="detailTypeCond" style="font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:0.75rem;margin-top:0.5rem;"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const AXES = ['SELF','DIRECTOR','DISTANCE','IMMERSION','OBSERVER','CONTROL'];
+const AXIS_LABELS = {SELF:'自己表現',DIRECTOR:'演出性',DISTANCE:'距離感',IMMERSION:'没入',OBSERVER:'観察',CONTROL:'コントロール'};
+const AXIS_DESC = {
+  SELF:'自分を写真の中心に置く傾向',DIRECTOR:'世界観や演出を大切にする傾向',
+  DISTANCE:'写真の中で自分を隠す傾向',IMMERSION:'空気や瞬間に溶け込む傾向',
+  OBSERVER:'人や場を観察・記録する傾向',CONTROL:'完成度や管理を重視する傾向'
+};
+
+// ══ 24問・各6択 ══
+const QUESTIONS = [
+  {text:'旅行先で絶対撮りたいのは？',opts:[
+    {label:'A',text:'自分も入った風景',scores:{SELF:4}},
+    {label:'B',text:'一緒にいる人',scores:{OBSERVER:4}},
+    {label:'C',text:'景色や建物',scores:{IMMERSION:4}},
+    {label:'D',text:'食べ物や小物',scores:{DIRECTOR:4}},
+    {label:'E',text:'空気が伝わる瞬間',scores:{OBSERVER:4}},
+    {label:'F',text:'何でもとにかく撮る',scores:{CONTROL:4}},
+  ]},
+  {text:'SNSのアイコンにするなら？',opts:[
+    {label:'A',text:'顔がはっきり写ってる',scores:{SELF:4}},
+    {label:'B',text:'横顔',scores:{DIRECTOR:4}},
+    {label:'C',text:'後ろ姿',scores:{DISTANCE:4}},
+    {label:'D',text:'景色',scores:{DISTANCE:4}},
+    {label:'E',text:'顔を隠してる',scores:{DISTANCE:4}},
+    {label:'F',text:'イラストやアイコン',scores:{DISTANCE:4}},
+  ]},
+  {text:'投稿時に一番気になるのは？',opts:[
+    {label:'A',text:'盛れてるか',scores:{SELF:4}},
+    {label:'B',text:'統一感',scores:{DIRECTOR:4}},
+    {label:'C',text:'他人からどう見えるか',scores:{CONTROL:4}},
+    {label:'D',text:'自分らしいか',scores:{SELF:4}},
+    {label:'E',text:'特に気にしない',scores:{IMMERSION:4}},
+    {label:'F',text:'いいねの数',scores:{OBSERVER:4}},
+  ]},
+  {text:'集合写真の写りが微妙だったら？',opts:[
+    {label:'A',text:'撮り直したい',scores:{CONTROL:4}},
+    {label:'B',text:'加工する',scores:{DIRECTOR:4}},
+    {label:'C',text:'雰囲気よければOK',scores:{IMMERSION:4}},
+    {label:'D',text:'自然で好き',scores:{DISTANCE:4}},
+    {label:'E',text:'全体がよければOK',scores:{OBSERVER:4}},
+    {label:'F',text:'そもそも集合写真が苦手',scores:{DISTANCE:4}},
+  ]},
+  {text:'集合写真で立つ位置は？',opts:[
+    {label:'A',text:'真ん中',scores:{SELF:4}},
+    {label:'B',text:'前列',scores:{SELF:4}},
+    {label:'C',text:'後ろ',scores:{DISTANCE:4}},
+    {label:'D',text:'端っこ',scores:{DISTANCE:4}},
+    {label:'E',text:'撮る側',scores:{OBSERVER:4}},
+    {label:'F',text:'どこでもいい',scores:{IMMERSION:4}},
+  ]},
+  {text:'ライブや花火、どのくらい撮る？',opts:[
+    {label:'A',text:'ずっと撮る',scores:{CONTROL:4}},
+    {label:'B',text:'かなり撮る',scores:{CONTROL:4}},
+    {label:'C',text:'最初だけ',scores:{CONTROL:4}},
+    {label:'D',text:'ほぼ撮らない',scores:{IMMERSION:4}},
+    {label:'E',text:'人の反応を撮る',scores:{OBSERVER:4}},
+    {label:'F',text:'気分次第',scores:{DIRECTOR:4}},
+  ]},
+  {text:'好きな自分の写真のタイプは？',opts:[
+    {label:'A',text:'盛れている写真',scores:{SELF:4}},
+    {label:'B',text:'自然な瞬間',scores:{IMMERSION:4}},
+    {label:'C',text:'遠くから',scores:{DISTANCE:4}},
+    {label:'D',text:'顔が見えない',scores:{DISTANCE:4}},
+    {label:'E',text:'雰囲気重視',scores:{DIRECTOR:4}},
+    {label:'F',text:'笑顔の写真',scores:{SELF:4}},
+  ]},
+  {text:'友達を撮るなら？',opts:[
+    {label:'A',text:'顔アップ',scores:{OBSERVER:4}},
+    {label:'B',text:'ポーズ写真',scores:{DIRECTOR:4}},
+    {label:'C',text:'ふとした瞬間',scores:{OBSERVER:4}},
+    {label:'D',text:'景色込み',scores:{IMMERSION:4}},
+    {label:'E',text:'後ろ姿',scores:{DIRECTOR:4}},
+    {label:'F',text:'たくさん枚数撮る',scores:{CONTROL:4}},
+  ]},
+  {text:'消したくなる写真は？',opts:[
+    {label:'A',text:'盛れてない',scores:{SELF:4}},
+    {label:'B',text:'雰囲気悪い',scores:{DIRECTOR:4}},
+    {label:'C',text:'自分だけ浮いてる',scores:{CONTROL:4}},
+    {label:'D',text:'生活感出すぎ',scores:{DISTANCE:4}},
+    {label:'E',text:'なんとなく気分じゃない',scores:{IMMERSION:4}},
+    {label:'F',text:'ピントが合ってない',scores:{CONTROL:4}},
+  ]},
+  {text:'自分のカメラロールに多いのは？',opts:[
+    {label:'A',text:'自撮りやツーショット',scores:{SELF:4}},
+    {label:'B',text:'友達',scores:{OBSERVER:4}},
+    {label:'C',text:'景色',scores:{IMMERSION:4}},
+    {label:'D',text:'モノや食べ物',scores:{DIRECTOR:4}},
+    {label:'E',text:'バランスよく何でも',scores:{OBSERVER:4}},
+    {label:'F',text:'スクショや記録系',scores:{CONTROL:4}},
+  ]},
+  {text:'写真を撮るとき、自分は？',opts:[
+    {label:'A',text:'自分らしさを写す人',scores:{SELF:4}},
+    {label:'B',text:'雰囲気や見せ方を考える人',scores:{DIRECTOR:4}},
+    {label:'C',text:'記録者',scores:{CONTROL:4}},
+    {label:'D',text:'その瞬間を残したい人',scores:{IMMERSION:4}},
+    {label:'E',text:'人を撮る人',scores:{OBSERVER:4}},
+    {label:'F',text:'風景を切り取る人',scores:{DISTANCE:4}},
+  ]},
+  {text:'写真の加工はどのくらいする？',opts:[
+    {label:'A',text:'かなりする',scores:{DIRECTOR:4}},
+    {label:'B',text:'少し整える',scores:{DIRECTOR:4}},
+    {label:'C',text:'フィルターだけ',scores:{DIRECTOR:4}},
+    {label:'D',text:'基本しない',scores:{IMMERSION:4}},
+    {label:'E',text:'写真による',scores:{CONTROL:4}},
+    {label:'F',text:'全くしない',scores:{DISTANCE:4}},
+  ]},
+  {text:'写真を見返すとき、まず何を見る？',opts:[
+    {label:'A',text:'自分の髪型や服装',scores:{SELF:4}},
+    {label:'B',text:'思い出',scores:{IMMERSION:4}},
+    {label:'C',text:'雰囲気',scores:{DIRECTOR:4}},
+    {label:'D',text:'一緒にいた人',scores:{OBSERVER:4}},
+    {label:'E',text:'構図やバランス',scores:{CONTROL:4}},
+    {label:'F',text:'その時の自分の感情',scores:{SELF:4}},
+  ]},
+  {text:'写真を頼まれたら？',opts:[
+    {label:'A',text:'撮ったあと自分も撮ってもらう',scores:{SELF:4}},
+    {label:'B',text:'綺麗に撮ろうとする',scores:{DIRECTOR:4}},
+    {label:'C',text:'何枚も撮る',scores:{CONTROL:4}},
+    {label:'D',text:'サッと撮る',scores:{DISTANCE:4}},
+    {label:'E',text:'自然な瞬間を狙う',scores:{OBSERVER:4}},
+    {label:'F',text:'構図を考えて撮る',scores:{DIRECTOR:4}},
+  ]},
+  {text:'インスタを使うとしたら？',opts:[
+    {label:'A',text:'日常を載せる',scores:{SELF:4}},
+    {label:'B',text:'世界観統一',scores:{DIRECTOR:4}},
+    {label:'C',text:'思い出共有',scores:{OBSERVER:4}},
+    {label:'D',text:'気まぐれ',scores:{IMMERSION:4}},
+    {label:'E',text:'あまり投稿しない',scores:{DISTANCE:4}},
+    {label:'F',text:'旅行や特別な日だけ',scores:{CONTROL:4}},
+  ]},
+  {text:'「いい写真」とは？',opts:[
+    {label:'A',text:'楽しそうな自分が写ってる',scores:{SELF:4}},
+    {label:'B',text:'空気感が伝わる',scores:{IMMERSION:4}},
+    {label:'C',text:'ストーリーがある',scores:{OBSERVER:4}},
+    {label:'D',text:'構図が完璧',scores:{DIRECTOR:4}},
+    {label:'E',text:'感情が動く',scores:{IMMERSION:4}},
+    {label:'F',text:'技術的に上手い',scores:{CONTROL:4}},
+  ]},
+  {text:'知らない街を歩いてる時、つい撮るのは？',opts:[
+    {label:'A',text:'そこにいる自分の様子',scores:{SELF:4}},
+    {label:'B',text:'街並み',scores:{IMMERSION:4}},
+    {label:'C',text:'面白いもの',scores:{DIRECTOR:4}},
+    {label:'D',text:'一緒の人',scores:{OBSERVER:4}},
+    {label:'E',text:'ふとした瞬間',scores:{OBSERVER:4}},
+    {label:'F',text:'光や影',scores:{DIRECTOR:4}},
+  ]},
+  {text:'あなたにとって写真とは？',opts:[
+    {label:'A',text:'自己表現',scores:{SELF:4}},
+    {label:'B',text:'記録',scores:{CONTROL:4}},
+    {label:'C',text:'思い出',scores:{IMMERSION:4}},
+    {label:'D',text:'アート',scores:{DIRECTOR:4}},
+    {label:'E',text:'コミュニケーション',scores:{OBSERVER:4}},
+    {label:'F',text:'趣味・楽しみ',scores:{IMMERSION:4}},
+  ]},
+  {text:'撮った写真、すぐ見直す？',opts:[
+    {label:'A',text:'その場でチェックして撮り直す',scores:{CONTROL:4}},
+    {label:'B',text:'後でゆっくり見返す',scores:{OBSERVER:4}},
+    {label:'C',text:'あまり見直さない',scores:{IMMERSION:4}},
+    {label:'D',text:'すぐ加工してから見る',scores:{DIRECTOR:4}},
+    {label:'E',text:'人に見せながら確認する',scores:{SELF:4}},
+    {label:'F',text:'気が向いたら見る',scores:{DISTANCE:4}},
+  ]},
+  {text:'写真を撮る頻度は？',opts:[
+    {label:'A',text:'毎日何枚も撮る',scores:{SELF:4}},
+    {label:'B',text:'特別な日だけ',scores:{IMMERSION:4}},
+    {label:'C',text:'気が向いたら',scores:{DISTANCE:4}},
+    {label:'D',text:'いい瞬間を逃さないよう常に意識',scores:{OBSERVER:4}},
+    {label:'E',text:'旅行やイベントの時だけ',scores:{CONTROL:4}},
+    {label:'F',text:'ほとんど撮らない',scores:{DISTANCE:4}},
+  ]},
+  {text:'誰かに自分の写真を撮ってもらう時、どう感じる？',opts:[
+    {label:'A',text:'嬉しい・積極的にお願いする',scores:{SELF:4}},
+    {label:'B',text:'ちょっと恥ずかしいけど嬉しい',scores:{SELF:4}},
+    {label:'C',text:'あまり気にしない',scores:{IMMERSION:4}},
+    {label:'D',text:'自分のイメージ通りに撮ってほしい',scores:{CONTROL:4}},
+    {label:'E',text:'自然な感じで撮ってほしい',scores:{DISTANCE:4}},
+    {label:'F',text:'できれば撮られたくない',scores:{DISTANCE:4}},
+  ]},
+  {text:'カメラ・スマホの写真フォルダの整理は？',opts:[
+    {label:'A',text:'アルバムごとに整理してる',scores:{CONTROL:4}},
+    {label:'B',text:'気に入らない写真は即削除',scores:{CONTROL:4}},
+    {label:'C',text:'ほぼ整理しない',scores:{IMMERSION:4}},
+    {label:'D',text:'たまにまとめて整理',scores:{OBSERVER:4}},
+    {label:'E',text:'全部残しておく派',scores:{OBSERVER:4}},
+    {label:'F',text:'クラウドに自動保存でOK',scores:{DISTANCE:4}},
+  ]},
+  {text:'写真を人に見せる時、どんな気持ち？',opts:[
+    {label:'A',text:'自分の世界観を知ってほしい',scores:{DIRECTOR:4}},
+    {label:'B',text:'一緒に思い出を振り返りたい',scores:{IMMERSION:4}},
+    {label:'C',text:'うまく撮れたのを褒めてほしい',scores:{CONTROL:4}},
+    {label:'D',text:'あまり見せたくない',scores:{DISTANCE:4}},
+    {label:'E',text:'相手の反応が見たい',scores:{OBSERVER:4}},
+    {label:'F',text:'自分の日常を共有したい',scores:{SELF:4}},
+  ]},
+  {text:'もし写真集を作るなら？',opts:[
+    {label:'A',text:'自分が主役のポートレート集',scores:{SELF:4}},
+    {label:'B',text:'旅や風景の記録集',scores:{DISTANCE:4}},
+    {label:'C',text:'大切な人たちのスナップ集',scores:{OBSERVER:4}},
+    {label:'D',text:'テーマを決めたアート写真集',scores:{DIRECTOR:4}},
+    {label:'E',text:'日常の記録・ライフログ',scores:{CONTROL:4}},
+    {label:'F',text:'作らない・興味ない',scores:{DISTANCE:4}},
+  ]},
+];
+
+
+// ── 判定ヘルパー ──
+function top2(s){return Object.entries(s).sort((a,b)=>b[1]-a[1]).slice(0,2).map(e=>e[0]);}
+function lead(s,ax,rank){const t=top2(s);return rank===1?t[0]===ax:t[1]===ax;}
+function gap(s){const vals=Object.values(s).sort((a,b)=>b-a);return vals[0]-vals[1];}
+function topScore(s){return Math.max(...Object.values(s));}
+
+const TYPES = [
+  {id:'icon',name:'アイコン存在型',
+   desc:'写真は"自分らしさ"を見せる場所。隠すより、堂々と存在するタイプ。顔出し・自己表現に迷いがない。',
+   condition:s=>lead(s,'SELF',1)&&gap(s)>=8,
+   cond_text:'SELFが1位かつ断トツ',
+   traits:['顔出し積極的','自己表現','ブランディング','存在感','アイデンティティ']},
+  {id:'producer',name:'世界観プロデューサー',
+   desc:'写真は記録ではなく演出。自分の存在も空気感も、全部含めてひとつの作品にしたいタイプ。',
+   condition:s=>lead(s,'SELF',1)&&lead(s,'DIRECTOR',2),
+   cond_text:'SELF 1位・DIRECTOR 2位',
+   traits:['演出重視','世界観設計','自己表現','ビジュアル思考','クリエイティブ']},
+  {id:'curator',name:'主役キュレーター',
+   desc:'写真の主役はあなた。ただし自己満ではなく、"最高の見え方"をちゃんと知っているタイプ。',
+   condition:s=>lead(s,'SELF',1)&&lead(s,'CONTROL',2),
+   cond_text:'SELF 1位・CONTROL 2位',
+   traits:['完成度重視','盛れ意識高め','見え方を計算','主役思考','こだわり']},
+  {id:'director',name:'美意識ディレクター',
+   desc:'写真はセンス。構図・統一感・加工にこだわり、世界観が崩れるのが苦手なタイプ。',
+   condition:s=>lead(s,'DIRECTOR',1)&&lead(s,'CONTROL',2),
+   cond_text:'DIRECTOR 1位・CONTROL 2位',
+   traits:['構図へのこだわり','統一感命','加工派','美意識高い','パーフェクショニスト']},
+  {id:'stylist',name:'フィルタースタイリスト',
+   desc:'演出はするけど完璧主義ではない。フィルターや色味で独自の雰囲気を作るのが好きなタイプ。',
+   condition:s=>lead(s,'DIRECTOR',1)&&!lead(s,'CONTROL',2)&&!lead(s,'OBSERVER',2),
+   cond_text:'DIRECTOR 1位（CONTROL・OBSERVER以外が2位）',
+   traits:['フィルター好き','色味こだわり','雰囲気重視','センス派','ゆるクリエイティブ']},
+  {id:'streetdirector',name:'ストリートディレクター',
+   desc:'日常の中に美しさを見つけて切り取るタイプ。構図はこだわるけど被写体は人や街の瞬間。',
+   condition:s=>lead(s,'DIRECTOR',1)&&lead(s,'OBSERVER',2),
+   cond_text:'DIRECTOR 1位・OBSERVER 2位',
+   traits:['構図重視','スナップ派','街歩き','日常の美','観察眼']},
+  {id:'collector',name:'ナチュラルコレクター',
+   desc:'完璧じゃなくてもいい。その瞬間のリアルを残したいタイプ。加工より自然体。',
+   condition:s=>lead(s,'IMMERSION',1)&&!lead(s,'OBSERVER',2)&&!lead(s,'DISTANCE',2),
+   cond_text:'IMMERSION 1位（OBSERVER・DISTANCE以外が2位）',
+   traits:['ありのまま','思い出大切','気楽','リアル志向','自然体']},
+  {id:'archiver',name:'空気感アーカイバー',
+   desc:'自分より"その場の温度"を残したいタイプ。写真は証拠ではなく記憶。',
+   condition:s=>lead(s,'IMMERSION',1)&&lead(s,'OBSERVER',2),
+   cond_text:'IMMERSION 1位・OBSERVER 2位',
+   traits:['空気感重視','瞬間派','人間観察','没入型','記憶保存']},
+  {id:'traveler',name:'匿名トラベラー',
+   desc:'写真の中に"自分"を残すより、その場所に溶け込みたいタイプ。後ろ姿や景色が多め。',
+   condition:s=>lead(s,'IMMERSION',1)&&lead(s,'DISTANCE',2),
+   cond_text:'IMMERSION 1位・DISTANCE 2位',
+   traits:['顔出しなし','景色重視','溶け込み型','ノスタルジア','旅人感']},
+  {id:'documentarist',name:'ドキュメンタリスト',
+   desc:'人・場・出来事を記録することに喜びを感じるタイプ。カメラは自分より世界に向いている。',
+   condition:s=>lead(s,'OBSERVER',1)&&gap(s)>=6,
+   cond_text:'OBSERVERが1位かつ断トツ',
+   traits:['記録魂','人間観察','ジャーナリスト気質','リポーター','ドキュメンタリー']},
+  {id:'silentobserver',name:'静かな観測者',
+   desc:'自分が主役になるより、人や瞬間を見つめていたいタイプ。撮る側が居心地いい。',
+   condition:s=>lead(s,'OBSERVER',1)&&lead(s,'DISTANCE',2),
+   cond_text:'OBSERVER 1位・DISTANCE 2位',
+   traits:['観察眼','撮る側','控えめ','洞察力','フェードアウト上手']},
+  {id:'ghost',name:'ゴーストフォトグラファー',
+   desc:'写真に自分の痕跡をほとんど残さないタイプ。景色や物だけが並ぶカメラロールが美しい。',
+   condition:s=>lead(s,'DISTANCE',1),
+   cond_text:'DISTANCE 1位',
+   traits:['痕跡なし','景色特化','ミステリアス','匿名性','余白美']},
+  {id:'perfectionist',name:'パーフェクショニスト',
+   desc:'撮り直し・加工・構図調整は当たり前。妥協しない完璧主義が写真に全部出るタイプ。',
+   condition:s=>lead(s,'CONTROL',1),
+   cond_text:'CONTROL 1位',
+   traits:['完璧主義','撮り直し派','加工必須','品質重視','妥協なし']},
+  {id:'balance',name:'バランス型ストーリーテラー',
+   desc:'自己表現・観察・空気感、どれかに偏るのではなくシーンによって自然に撮り方を変えるタイプ。',
+   condition:()=>true,
+   cond_text:'デフォルト（バランス型）',
+   traits:['柔軟性','状況適応','オールラウンド','直感派','ストーリーテラー']},
+];
+// ── STATE ──
+let currentQ=0;
+let answers=new Array(QUESTIONS.length).fill(null);
+let scores={};
+let resultType=null;
+let radarChartInstance=null;
+
+// ── QUIZ ──
+function startQuiz(){showScreen('quiz');renderQ();}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function renderQ(){
+  const q=QUESTIONS[currentQ];
+  document.getElementById('qNumber').textContent='Q '+String(currentQ+1).padStart(2,'0');
+  const qEl=document.getElementById('qText');
+  qEl.textContent=q.text;
+  qEl.classList.remove('anim-in');void qEl.offsetWidth;qEl.classList.add('anim-in');
+  const grid=document.getElementById('optionsGrid');
+  grid.innerHTML='';
+  q.opts.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='option-btn'+(answers[currentQ]===i?' selected':'');
+    btn.innerHTML=`<span class="opt-label">${opt.label}</span>${opt.text}`;
+    btn.onclick=()=>selectOpt(i);
+    grid.appendChild(btn);
+  });
+  document.getElementById('progressFill').style.width=(currentQ/QUESTIONS.length*100)+'%';
+  document.getElementById('progressLabel').textContent=(currentQ+1)+' / '+QUESTIONS.length;
+  const btnNext=document.getElementById('btnNext');
+  btnNext.classList.toggle('enabled',answers[currentQ]!==null);
+  btnNext.textContent=currentQ<QUESTIONS.length-1?'次へ →':'結果を見る ✓';
+}
+function selectOpt(idx){
+  answers[currentQ]=idx;
+  document.querySelectorAll('.option-btn').forEach((b,i)=>b.classList.toggle('selected',i===idx));
+  const btnNext=document.getElementById('btnNext');
+  btnNext.classList.add('enabled');
+  btnNext.textContent=currentQ<QUESTIONS.length-1?'次へ →':'結果を見る ✓';
+  if(currentQ<QUESTIONS.length-1){
+    setTimeout(()=>{if(answers[currentQ]===idx)nextQ();},380);
+  }
+}
+function nextQ(){
+  if(answers[currentQ]===null)return;
+  if(currentQ<QUESTIONS.length-1){currentQ++;renderQ();}
+  else calcResult();
+}
+function prevQ(){
+  if(currentQ>0){currentQ--;renderQ();}
+  else showScreen('hero');
+}
+function calcResult(){
+  scores={SELF:0,DIRECTOR:0,DISTANCE:0,IMMERSION:0,OBSERVER:0,CONTROL:0};
+  answers.forEach((ans,qi)=>{
+    if(ans===null)return;
+    Object.entries(QUESTIONS[qi].opts[ans].scores).forEach(([ax,val])=>{scores[ax]=(scores[ax]||0)+val;});
+  });
+  AXES.forEach(ax=>{if(scores[ax]<0)scores[ax]=0;});
+  resultType=TYPES.find(t=>t.condition(scores))||TYPES[TYPES.length-1];
+  showResult();
+}
+
+// ── RESULT ──
+function showResult(){
+  document.getElementById('resultTypeName').textContent=resultType.name;
+  document.getElementById('resultDesc').textContent=resultType.desc;
+  showScreen('result');
+  renderScores();
+  renderRadar();
+  renderTypePills();
+  saveRecord();
+}
+function renderScores(){
+  const maxP=96;
+  const grid=document.getElementById('scoresGrid');
+  grid.innerHTML='';
+  AXES.forEach(ax=>{
+    const pct=Math.min(100,Math.round(scores[ax]/maxP*100));
+    grid.innerHTML+=`<div class="score-card">
+      <div class="score-axis">${ax}</div>
+      <div class="score-val">${scores[ax]}</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+      <div class="score-meaning">${AXIS_DESC[ax]}</div>
+    </div>`;
+  });
+  const rowsEl=document.getElementById('axisRows');
+  rowsEl.innerHTML='';
+  AXES.forEach(ax=>{
+    const pct=Math.min(100,Math.round(scores[ax]/maxP*100));
+    rowsEl.innerHTML+=`<div class="axis-row">
+      <div class="axis-label">${AXIS_LABELS[ax]}</div>
+      <div class="axis-track"><div class="axis-fill" style="width:${pct}%"></div></div>
+      <div class="axis-pct">${pct}%</div>
+    </div>`;
+  });
+  document.getElementById('traitsList').innerHTML=resultType.traits.map(t=>`<span class="trait-tag">${t}</span>`).join('');
+}
+function renderRadar(){
+  if(radarChartInstance){radarChartInstance.destroy();radarChartInstance=null;}
+  const ctx=document.getElementById('radarChart').getContext('2d');
+  const maxScore=Math.max(...AXES.map(ax=>scores[ax]),1);
+  const dynamicMax=Math.ceil(maxScore/10)*10+10;
+  radarChartInstance=new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels:AXES.map(ax=>AXIS_LABELS[ax]),
+      datasets:[{
+        data:AXES.map(ax=>scores[ax]),
+        borderColor:'#c8a96e',
+        backgroundColor:'rgba(200,169,110,0.2)',
+        pointBackgroundColor:'#c8a96e',
+        pointBorderColor:'#c8a96e',
+        borderWidth:2.5,pointRadius:5,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{r:{
+        min:0,max:dynamicMax,
+        ticks:{display:false},
+        grid:{color:'rgba(255,255,255,0.1)'},
+        angleLines:{color:'rgba(255,255,255,0.1)'},
+        pointLabels:{color:'#c8a96e',font:{size:13,family:'Noto Sans JP',weight:'500'}},
+      }}
+    }
+  });
+}
+function renderTypePills(){
+  document.getElementById('typePills').innerHTML=TYPES.map(t=>`
+    <div class="type-pill ${t.id===resultType.id?'is-you':''}" onclick="showTypeDetail('${t.id}')">
+      ${t.name}${t.id===resultType.id?' ← あなた':''}
+    </div>`).join('');
+}
+function showTypeDetail(id){
+  const t=TYPES.find(x=>x.id===id);
+  document.getElementById('detailTypeName').textContent=t.name;
+  document.getElementById('detailTypeDesc').textContent=t.desc;
+  document.getElementById('detailTypeCond').textContent='条件: '+t.cond_text;
+  document.getElementById('modalTypeDetail').classList.add('open');
+}
+function showAllTypes(){
+  document.getElementById('modalTypeList').innerHTML=TYPES.map(t=>`
+    <div style="padding:0.9rem 0;border-bottom:1px solid var(--border);">
+      <div style="font-weight:500;margin-bottom:0.3rem;color:var(--text);font-size:0.95rem">${t.name}</div>
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.7">${t.desc}</div>
+    </div>`).join('');
+  document.getElementById('modalAllTypes').classList.add('open');
+}
+function closeModalByOverlay(e,id){if(e.target===e.currentTarget)closeModalById(id);}
+function closeModalById(id){document.getElementById(id).classList.remove('open');}
+function showSendModal(){
+  const record={id:Date.now(),date:new Date().toISOString(),type:resultType.id,typeName:resultType.name,scores:{...scores}};
+  document.getElementById('jsonPreview').textContent=JSON.stringify([record]);
+  document.getElementById('modalSend').classList.add('open');
+}
+function copyJSON(){
+  const record={id:Date.now(),date:new Date().toISOString(),type:resultType.id,typeName:resultType.name,scores:{...scores}};
+  const json=JSON.stringify([record]);
+  const copy=(text)=>{
+    if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>showToast('コピーしました！送ってください'));}
+    else{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('コピーしました！送ってください');}
+  };
+  copy(json);
+}
+function copyResult(){
+  const txt=`📷 写真スタイル診断\n\nタイプ：${resultType.name}\n\n${resultType.desc}\n\n— スコア —\n`+AXES.map(ax=>`${AXIS_LABELS[ax]}: ${scores[ax]}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>showToast('コピーしました！')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('コピーしました！');
+  });
+}
+function retakeQuiz(){
+  currentQ=0;answers=new Array(QUESTIONS.length).fill(null);
+  scores={};resultType=null;
+  if(radarChartInstance){radarChartInstance.destroy();radarChartInstance=null;}
+  showScreen('hero');
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+const SUPABASE_URL='https://hkmaakdlkuumytcacvvr.supabase.co';
+const SUPABASE_KEY='sb_publishable_s2tnoSYp2D5QRX5es-kTwQ_REZzqjMi';
+
+async function saveRecord(){
+  // LocalStorageにも保存
+  try{
+    const key='photoTypeResults';
+    const existing=JSON.parse(localStorage.getItem(key)||'[]');
+    existing.push({id:Date.now(),date:new Date().toISOString(),type:resultType.id,typeName:resultType.name,scores:{...scores}});
+    localStorage.setItem(key,JSON.stringify(existing));
+  }catch(e){}
+
+  // Supabaseに自動送信
+  try{
+    const res = await fetch(SUPABASE_URL+'/rest/v1/result',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'Prefer':'return=minimal'
+      },
+      body:JSON.stringify({
+        type: resultType.id,
+        type_name: resultType.name,
+        self: scores.SELF||0,
+        director: scores.DIRECTOR||0,
+        distance: scores.DISTANCE||0,
+        immersion: scores.IMMERSION||0,
+        observer: scores.OBSERVER||0,
+        control: scores.CONTROL||0,
+      })
+    });
+    if(res.ok){
+      console.log('Supabaseに送信成功');
+    }else{
+      console.warn('Supabase送信失敗',res.status);
+    }
+  }catch(e){
+    console.warn('Supabase送信エラー',e);
+  }
+}
+</script>
+</body>
+</html>

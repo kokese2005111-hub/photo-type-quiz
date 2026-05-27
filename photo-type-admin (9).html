@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理ダッシュボード — Photo Type</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #22223a;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0eee8;
+    --text-muted: #888790;
+    --text-dim: #444455;
+    --accent: #c8a96e;
+    --accent2: #8b6fcb;
+    --accent3: #6cb8c8;
+    --green: #5cc88a;
+    --red: #e05a5a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 50;
+  }
+  .sidebar-logo {
+    padding: 1.8rem 1.5rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .eyebrow {
+    font-size: 10px; letter-spacing: 3px; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 0.3rem;
+  }
+  .sidebar-logo .title {
+    font-family: 'Playfair Display', serif; font-size: 1.1rem;
+  }
+  .nav-links { padding: 1.2rem 0; flex: 1; }
+  .nav-link {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1.5rem; cursor: pointer;
+    color: var(--text-muted); font-size: 0.85rem;
+    transition: all 0.2s; border: none; background: none;
+    width: 100%; text-align: left;
+  }
+  .nav-link .icon { font-size: 16px; width: 18px; }
+  .nav-link:hover { color: var(--text); background: var(--surface2); }
+  .nav-link.active { color: var(--accent); background: rgba(200,169,110,0.08); }
+  .nav-link.active .icon { color: var(--accent); }
+  .sidebar-bottom {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .sidebar-bottom a {
+    display: block; font-size: 12px; color: var(--text-muted);
+    text-decoration: none; margin-bottom: 0.5rem;
+  }
+  .sidebar-bottom a:hover { color: var(--accent); }
+
+  /* ─── MAIN ─── */
+  .main { margin-left: 220px; flex: 1; }
+  .topbar {
+    padding: 1.2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-title { font-size: 1rem; font-weight: 500; }
+  .topbar-actions { display: flex; gap: 0.75rem; }
+  .btn-sm {
+    padding: 0.5rem 1.2rem; font-size: 13px; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--text-muted);
+  }
+  .btn-sm:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-sm.danger { border-color: rgba(224,90,90,0.4); color: var(--red); }
+  .btn-sm.danger:hover { background: rgba(224,90,90,0.1); }
+  .btn-sm.primary { background: var(--accent); border-color: var(--accent); color: #0a0a0f; font-weight: 500; }
+  .btn-sm.primary:hover { background: #d4b87e; }
+
+  /* ─── VIEWS ─── */
+  .view { display: none; padding: 2rem; }
+  .view.active { display: block; }
+
+  /* ─── METRIC CARDS ─── */
+  .metrics-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  .metric-card {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+  }
+  .metric-label { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .metric-value { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--text); }
+  .metric-sub { font-size: 12px; color: var(--text-muted); margin-top: 0.3rem; }
+  .metric-badge {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    font-size: 11px; margin-top: 0.4rem;
+  }
+  .badge-up { background: rgba(92,200,138,0.15); color: var(--green); }
+  .badge-type { background: rgba(200,169,110,0.15); color: var(--accent); }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-size: 11px; letter-spacing: 3px; color: var(--text-dim);
+    text-transform: uppercase; margin-bottom: 1.2rem;
+  }
+
+  /* ─── CHARTS GRID ─── */
+  .charts-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;
+  }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1.5rem;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-card h3 { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 1.2rem; }
+  .chart-wrap { position: relative; height: 260px; }
+  .chart-wrap.sm { height: 200px; }
+  .chart-wrap.lg { height: 320px; }
+
+  /* ─── TYPE BREAKDOWN ─── */
+  .type-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .type-row { display: flex; align-items: center; gap: 0.75rem; }
+  .type-row-name { font-size: 13px; color: var(--text-muted); width: 140px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .type-bar-bg { flex: 1; height: 6px; background: var(--surface2); }
+  .type-bar-fill { height: 100%; background: var(--accent); transition: width 0.8s; }
+  .type-bar-count { font-size: 12px; color: var(--text-dim); width: 36px; text-align: right; }
+
+  /* ─── TABLE ─── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    padding: 0.75rem 1rem; text-align: left;
+    color: var(--text-dim); font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 0.75rem 1rem; color: var(--text-muted); }
+  .type-badge {
+    display: inline-block; padding: 0.2rem 0.7rem;
+    background: rgba(200,169,110,0.12); color: var(--accent);
+    font-size: 11px;
+  }
+  .score-pill {
+    display: inline-block; padding: 0.15rem 0.5rem;
+    font-size: 11px; background: var(--surface2);
+    color: var(--text-dim); margin: 1px;
+  }
+
+  /* ─── RADAR AVG ─── */
+  .radar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; }
+  .axis-breakdown { display: flex; flex-direction: column; gap: 0.7rem; }
+  .axis-row-admin { display: flex; align-items: center; gap: 0.75rem; }
+  .axis-name { font-size: 12px; color: var(--text-muted); width: 90px; flex-shrink: 0; }
+  .axis-track { flex: 1; height: 4px; background: var(--surface2); }
+  .axis-fill { height: 100%; background: var(--accent2); transition: width 1s; }
+  .axis-avg { font-size: 12px; color: var(--text-dim); width: 32px; text-align: right; }
+
+  /* ─── IMPORT ─── */
+  .import-box {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 2rem; text-align: center; margin-bottom: 2rem;
+  }
+  .import-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.8; }
+  .import-code {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 1rem 1.5rem; font-family: monospace; font-size: 13px;
+    color: var(--text-muted); text-align: left; margin-bottom: 1.5rem;
+    max-height: 120px; overflow-y: auto; word-break: break-all;
+    line-height: 1.6;
+  }
+  textarea.import-area {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 1rem; font-family: monospace; font-size: 13px;
+    resize: vertical; height: 120px; outline: none;
+  }
+  textarea.import-area:focus { border-color: var(--accent); }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center; padding: 5rem 2rem;
+    color: var(--text-dim);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.3; }
+  .empty-state p { font-size: 0.9rem; line-height: 1.8; }
+
+  /* ─── INDIVIDUAL RESULTS ─── */
+  .result-cards { display: flex; flex-direction: column; gap: 0.75rem; }
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .result-card-date { font-size: 12px; color: var(--text-dim); width: 140px; flex-shrink: 0; }
+  .result-card-type { flex: 1; }
+  .result-card-scores { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+  /* ─── FILTER BAR ─── */
+  .filter-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .filter-select {
+    padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--border2);
+    color: var(--text-muted); font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
+    cursor: pointer; outline: none;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--accent);
+    color: var(--accent); padding: 0.7rem 2rem; font-size: 0.85rem;
+    z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 0; overflow: hidden; }
+    .main { margin-left: 0; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .radar-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="eyebrow">Admin</div>
+      <div class="title">Photo Type</div>
+    </div>
+    <nav class="nav-links">
+      <button class="nav-link active" onclick="switchView('overview')">
+        <span class="icon">📊</span> 概要
+      </button>
+      <button class="nav-link" onclick="switchView('types')">
+        <span class="icon">🎭</span> タイプ分析
+      </button>
+      <button class="nav-link" onclick="switchView('axes')">
+        <span class="icon">📐</span> 軸スコア分析
+      </button>
+      <button class="nav-link" onclick="switchView('records')">
+        <span class="icon">📋</span> 個別結果一覧
+      </button>
+      <button class="nav-link" onclick="switchView('import')">
+        <span class="icon">📥</span> データ入出力
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="photo-type-quiz.html" target="_blank">→ 診断サイトを開く</a>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">概要ダッシュボード</div>
+      <div class="topbar-actions">
+        <button class="btn-sm" onclick="refreshAll()">更新</button>
+        <button class="btn-sm primary" onclick="exportData()">CSVエクスポート</button>
+        <button class="btn-sm danger" onclick="clearData()">データ削除</button>
+      </div>
+    </div>
+
+    <!-- VIEW: OVERVIEW -->
+    <div class="view active" id="view-overview">
+      <div class="metrics-row" id="metricsRow"></div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>タイプ分布</h3>
+          <div class="chart-wrap">
+            <canvas id="doughnutChart" role="img" aria-label="タイプ別の分布ドーナツチャート"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>タイプ別人数</h3>
+          <div class="type-list" id="typeBreakdown"></div>
+        </div>
+        <div class="chart-card full">
+          <h3>回答数の推移（時系列）</h3>
+          <div class="chart-wrap lg">
+            <canvas id="timeChart" role="img" aria-label="日別の回答数推移"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: TYPES -->
+    <div class="view" id="view-types">
+      <div class="charts-grid">
+        <div class="chart-card full">
+          <h3>タイプ別 平均スコア比較</h3>
+          <div class="chart-wrap lg">
+            <canvas id="typeCompChart" role="img" aria-label="タイプ別平均スコア比較"></canvas>
+          </div>
+        </div>
+        <div class="chart-card full">
+          <h3>タイプ詳細</h3>
+          <div class="table-wrap">
+            <table id="typeSummaryTable">
+              <thead>
+                <tr>
+                  <th>タイプ名</th><th>人数</th><th>割合</th>
+                  <th>SELF avg</th><th>DIRECTOR avg</th><th>DISTANCE avg</th>
+                  <th>IMMERSION avg</th><th>OBSERVER avg</th><th>CONTROL avg</th>
+                </tr>
+              </thead>
+              <tbody id="typeSummaryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: AXES -->
+    <div class="view" id="view-axes">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>全体 平均レーダー</h3>
+          <div class="chart-wrap">
+            <canvas id="avgRadarChart" role="img" aria-label="全体平均レーダーチャート"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>軸スコア 平均値</h3>
+          <div class="axis-breakdown" id="axisBreakdown"></div>
+        </div>
+        <div class="chart-card full">
+          <h3>軸スコア 分布（箱ひげ風）</h3>
+          <div class="chart-wrap lg">
+            <canvas id="axisDistChart" role="img" aria-label="軸スコアの分布チャート"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: RECORDS -->
+    <div class="view" id="view-records">
+      <div class="filter-bar">
+        <select class="filter-select" id="filterType" onchange="renderRecords()">
+          <option value="">全タイプ</option>
+        </select>
+        <select class="filter-select" id="filterSort" onchange="renderRecords()">
+          <option value="desc">新しい順</option>
+          <option value="asc">古い順</option>
+        </select>
+      </div>
+      <div id="recordsList"></div>
+    </div>
+
+    <!-- VIEW: IMPORT/EXPORT -->
+    <div class="view" id="view-import">
+      <div class="charts-grid">
+        <div class="chart-card full">
+          <h3>JSONエクスポート</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;line-height:1.8;">
+            現在の全データをJSON形式でエクスポートします。配布先から集めたデータを取り込む際は「インポート」をご利用ください。
+          </p>
+          <div class="import-code" id="exportPreview">（データなし）</div>
+          <div style="display:flex;gap:0.75rem;">
+            <button class="btn-sm primary" onclick="exportJSON()">JSONをコピー</button>
+            <button class="btn-sm" onclick="exportData()">CSVダウンロード</button>
+          </div>
+        </div>
+
+        <div class="chart-card full">
+          <h3>JSONインポート（他端末からのデータ取り込み）</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;line-height:1.8;">
+            配布先の方に診断後、診断サイトの「結果をコピー」→「JSONをコピー」してもらい、<br>
+            そのJSONをここに貼り付けてインポートしてください。<br>
+            または、あなた自身が他のブラウザ/端末で取得したJSONも同様に取り込めます。
+          </p>
+          <textarea class="import-area" id="importArea" placeholder='[{"id":...,"type":...,"scores":...}, ...]'></textarea>
+          <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+            <button class="btn-sm primary" onclick="importJSON()">インポート実行</button>
+            <button class="btn-sm" onclick="document.getElementById('importArea').value=''">クリア</button>
+          </div>
+        </div>
+
+        <div class="chart-card full">
+          <h3>配布用リンクの共有方法</h3>
+          <p style="font-size:13px;color:var(--text-muted);line-height:2;">
+            1. <strong style="color:var(--text)">photo-type-quiz.html</strong> を配布したい人に送る（またはサーバーにアップ）<br>
+            2. 受診者が診断を完了すると、ローカルに結果が保存される<br>
+            3. 受診者に「結果のJSONをコピーして送ってもらう」<br>
+            4. このダッシュボードのインポート画面に貼り付けて集計<br><br>
+            <span style="color:var(--text-dim)">※ サーバー不要でローカルのみで動作します</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONSTANTS ───
+const AXES = ['SELF','DIRECTOR','DISTANCE','IMMERSION','OBSERVER','CONTROL'];
+const AXIS_LABELS = {SELF:'自己表現',DIRECTOR:'演出性',DISTANCE:'距離感',IMMERSION:'没入',OBSERVER:'観察',CONTROL:'コントロール'};
+const TYPE_DEFS = [
+  {id:'icon',name:'アイコン存在型'},
+  {id:'producer',name:'世界観プロデューサー'},
+  {id:'curator',name:'主役キュレーター'},
+  {id:'director',name:'美意識ディレクター'},
+  {id:'stylist',name:'フィルタースタイリスト'},
+  {id:'streetdirector',name:'ストリートディレクター'},
+  {id:'collector',name:'ナチュラルコレクター'},
+  {id:'archiver',name:'空気感アーカイバー'},
+  {id:'traveler',name:'匿名トラベラー'},
+  {id:'documentarist',name:'ドキュメンタリスト'},
+  {id:'silentobserver',name:'静かな観測者'},
+  {id:'ghost',name:'ゴーストフォトグラファー'},
+  {id:'perfectionist',name:'パーフェクショニスト'},
+  {id:'balance',name:'バランス型ストーリーテラー'},
+];
+const TYPE_COLORS = [
+  '#c8a96e','#8b6fcb','#6cb8c8','#5cc88a','#e08b5a','#e05a8b',
+  '#a8c86c','#5a8be0','#e0c85a','#5ae0b8','#c85a5a','#8bc8e0','#b88be0','#888790'
+];
+
+let records = [];
+let charts = {};
+
+const SUPABASE_URL='https://hkmaakdlkuumytcacvvr.supabase.co';
+const SUPABASE_KEY='sb_publishable_s2tnoSYp2D5QRX5es-kTwQ_REZzqjMi';
+
+// ─── INIT ───
+function init() {
+  loadData();
+  populateFilterType();
+  renderAll();
+  updateExportPreview();
+}
+
+async function loadData() {
+  // まずLocalStorageから読み込む
+  try {
+    records = JSON.parse(localStorage.getItem('photoTypeResults') || '[]');
+  } catch(e) { records = []; }
+
+  // Supabaseから最新データを取得してマージ
+  try {
+    const res = await fetch(SUPABASE_URL+'/rest/v1/result?select=*&order=created_at.desc&limit=1000', {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY,
+      }
+    });
+    if(res.ok) {
+      const data = await res.json();
+      // Supabaseのデータをrecords形式に変換
+      const supabaseRecords = data.map(r => ({
+        id: r.id,
+        date: r.created_at,
+        type: r.type,
+        typeName: r.type_name,
+        scores: {
+          SELF: r.self||0,
+          DIRECTOR: r.director||0,
+          DISTANCE: r.distance||0,
+          IMMERSION: r.immersion||0,
+          OBSERVER: r.observer||0,
+          CONTROL: r.control||0,
+        }
+      }));
+      // LocalStorageのデータとマージ（重複排除）
+      const localIds = new Set(records.map(r => r.id));
+      supabaseRecords.forEach(r => {
+        if(!localIds.has(r.id)) records.push(r);
+      });
+      // Supabaseのデータで上書き（最新優先）
+      records = supabaseRecords;
+      console.log('Supabaseから'+supabaseRecords.length+'件取得');
+    }
+  } catch(e) {
+    console.warn('Supabase取得エラー:', e);
+  }
+  renderAll();
+}
+
+function saveData() {
+  localStorage.setItem('photoTypeResults', JSON.stringify(records));
+}
+
+// Demo data if empty
+function loadDemoData() {
+  const types = ['producer','curator','archiver','observer','traveler','director','collector','icon','balance'];
+  const now = Date.now();
+  const demo = [];
+  for (let i = 0; i < 24; i++) {
+    const typeId = types[Math.floor(Math.random() * types.length)];
+    const typeDef = TYPE_DEFS.find(t => t.id === typeId);
+    const scores = {};
+    AXES.forEach(ax => { scores[ax] = Math.floor(Math.random() * 18) + 2; });
+    demo.push({
+      id: now - (i * 3600000 * 8) - Math.random() * 3600000,
+      date: new Date(now - (i * 3600000 * 8)).toISOString(),
+      type: typeId,
+      typeName: typeDef.name,
+      scores,
+    });
+  }
+  records = demo;
+  saveData();
+  init();
+  showToast('デモデータを読み込みました（24件）');
+}
+
+// ─── SWITCH VIEW ───
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  const titles = {
+    overview: '概要ダッシュボード', types: 'タイプ分析',
+    axes: '軸スコア分析', records: '個別結果一覧', import: 'データ入出力'
+  };
+  document.getElementById('topbarTitle').textContent = titles[name] || '';
+  renderAll();
+}
+
+// ─── RENDER ALL ───
+function renderAll() {
+  renderMetrics();
+  renderDoughnut();
+  renderTypeBreakdown();
+  renderTimeChart();
+  renderTypeComp();
+  renderTypeSummaryTable();
+  renderAvgRadar();
+  renderAxisBreakdown();
+  renderAxisDist();
+  renderRecords();
+  updateExportPreview();
+}
+
+// ─── METRICS ───
+function renderMetrics() {
+  const total = records.length;
+  if (total === 0) {
+    document.getElementById('metricsRow').innerHTML = `
+      <div class="metric-card">
+        <div class="metric-label">総回答数</div>
+        <div class="metric-value">0</div>
+        <div class="metric-sub">まだデータがありません</div>
+        <button class="btn-sm" style="margin-top:0.75rem;" onclick="loadDemoData()">デモデータを読む</button>
+      </div>`;
+    return;
+  }
+
+  // Most common type
+  const typeCounts = countTypes();
+  const topType = Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0];
+  const topTypeName = TYPE_DEFS.find(t=>t.id===topType[0])?.name || topType[0];
+
+  // Avg scores
+  const avgScores = calcAvgScores();
+  const topAxis = AXES.reduce((a,b) => avgScores[a] > avgScores[b] ? a : b);
+
+  // Recent 7 days
+  const cutoff = Date.now() - 7 * 86400000;
+  const recent = records.filter(r => new Date(r.date).getTime() > cutoff).length;
+
+  document.getElementById('metricsRow').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">総回答数</div>
+      <div class="metric-value">${total}</div>
+      <div class="metric-sub">累計</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">直近7日</div>
+      <div class="metric-value">${recent}</div>
+      <div class="metric-sub">件の新規回答</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">最多タイプ</div>
+      <div class="metric-value" style="font-size:1.3rem;">${topTypeName}</div>
+      <div class="metric-badge badge-type">${topType[1]}人</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">最高軸（平均）</div>
+      <div class="metric-value" style="font-size:1.6rem;">${AXIS_LABELS[topAxis]}</div>
+      <div class="metric-sub">avg ${avgScores[topAxis].toFixed(1)}</div>
+    </div>
+  `;
+}
+
+// ─── DOUGHNUT ───
+function renderDoughnut() {
+  const ctx = document.getElementById('doughnutChart');
+  if (!ctx) return;
+  const typeCounts = countTypes();
+  const labels = TYPE_DEFS.map(t => t.name);
+  const data = TYPE_DEFS.map(t => typeCounts[t.id] || 0);
+
+  destroyChart('doughnut');
+  charts['doughnut'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: TYPE_COLORS, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}人` } }
+      },
+      cutout: '68%',
+    }
+  });
+}
+
+// ─── TYPE BREAKDOWN ───
+function renderTypeBreakdown() {
+  const el = document.getElementById('typeBreakdown');
+  if (!el) return;
+  const typeCounts = countTypes();
+  const total = records.length || 1;
+  const sorted = TYPE_DEFS.map(t => ({ ...t, count: typeCounts[t.id] || 0 }))
+    .sort((a,b) => b.count - a.count);
+  const max = sorted[0]?.count || 1;
+
+  el.innerHTML = sorted.map(t => `
+    <div class="type-row">
+      <div class="type-row-name" title="${t.name}">${t.name}</div>
+      <div class="type-bar-bg"><div class="type-bar-fill" style="width:${(t.count/max)*100}%"></div></div>
+      <div class="type-bar-count">${t.count}</div>
+    </div>`).join('');
+}
+
+// ─── TIME CHART ───
+function renderTimeChart() {
+  const ctx = document.getElementById('timeChart');
+  if (!ctx) return;
+  if (records.length === 0) { destroyChart('time'); return; }
+
+  // Group by date
+  const byDate = {};
+  records.forEach(r => {
+    const d = r.date.slice(0, 10);
+    byDate[d] = (byDate[d] || 0) + 1;
+  });
+  const sortedDates = Object.keys(byDate).sort();
+  const labels = sortedDates;
+  const data = sortedDates.map(d => byDate[d]);
+
+  destroyChart('time');
+  charts['time'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '回答数',
+        data,
+        backgroundColor: 'rgba(200,169,110,0.5)',
+        borderColor: '#c8a96e',
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#555462', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#555462', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+// ─── TYPE COMP CHART ───
+function renderTypeComp() {
+  const ctx = document.getElementById('typeCompChart');
+  if (!ctx) return;
+  if (records.length === 0) { destroyChart('typeComp'); return; }
+
+  // Avg scores per type
+  const typeCounts = countTypes();
+  const typeScores = {};
+  records.forEach(r => {
+    if (!typeScores[r.type]) typeScores[r.type] = { count: 0, totals: {} };
+    typeScores[r.type].count++;
+    AXES.forEach(ax => {
+      typeScores[r.type].totals[ax] = (typeScores[r.type].totals[ax] || 0) + (r.scores[ax] || 0);
+    });
+  });
+
+  const activeTypes = TYPE_DEFS.filter(t => typeCounts[t.id] > 0);
+  const datasets = AXES.map((ax, i) => ({
+    label: AXIS_LABELS[ax],
+    data: activeTypes.map(t => {
+      const ts = typeScores[t.id];
+      return ts ? +(ts.totals[ax] / ts.count).toFixed(1) : 0;
+    }),
+    backgroundColor: TYPE_COLORS[i] + '99',
+    borderColor: TYPE_COLORS[i],
+    borderWidth: 1,
+  }));
+
+  destroyChart('typeComp');
+  charts['typeComp'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: activeTypes.map(t => t.name), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#555462', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#555462' }, grid: { color: 'rgba(255,255,255,0.04)' }, max: 96 }
+      }
+    }
+  });
+}
+
+// ─── TYPE SUMMARY TABLE ───
+function renderTypeSummaryTable() {
+  const tbody = document.getElementById('typeSummaryBody');
+  if (!tbody) return;
+  const total = records.length || 1;
+  const typeScores = {};
+  records.forEach(r => {
+    if (!typeScores[r.type]) typeScores[r.type] = { count: 0, totals: {} };
+    typeScores[r.type].count++;
+    AXES.forEach(ax => { typeScores[r.type].totals[ax] = (typeScores[r.type].totals[ax]||0)+(r.scores[ax]||0); });
+  });
+
+  tbody.innerHTML = TYPE_DEFS.map(t => {
+    const ts = typeScores[t.id];
+    if (!ts) return `<tr><td><span class="type-badge">${t.name}</span></td><td>0</td><td>0%</td>${AXES.map(()=>'<td>—</td>').join('')}</tr>`;
+    const pct = Math.round(ts.count/total*100);
+    const avgs = AXES.map(ax => (ts.totals[ax]/ts.count).toFixed(1));
+    return `<tr>
+      <td><span class="type-badge">${t.name}</span></td>
+      <td style="color:var(--text)">${ts.count}</td>
+      <td>${pct}%</td>
+      ${avgs.map(v=>`<td>${v}</td>`).join('')}
+    </tr>`;
+  }).join('');
+}
+
+// ─── AVG RADAR ───
+function renderAvgRadar() {
+  const ctx = document.getElementById('avgRadarChart');
+  if (!ctx) return;
+  if (records.length === 0) { destroyChart('avgRadar'); return; }
+  const avg = calcAvgScores();
+
+  destroyChart('avgRadar');
+  charts['avgRadar'] = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: AXES.map(ax => AXIS_LABELS[ax]),
+      datasets: [{
+        label: '全体平均',
+        data: AXES.map(ax => +avg[ax].toFixed(1)),
+        borderColor: '#8b6fcb',
+        backgroundColor: 'rgba(139,111,203,0.15)',
+        pointBackgroundColor: '#8b6fcb',
+        borderWidth: 2, pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 96,
+          ticks: { display: false },
+          grid: { color: 'rgba(255,255,255,0.07)' },
+          angleLines: { color: 'rgba(255,255,255,0.07)' },
+          pointLabels: { color: '#888790', font: { size: 11, family: 'Noto Sans JP' } },
+        }
+      }
+    }
+  });
+}
+
+// ─── AXIS BREAKDOWN ───
+function renderAxisBreakdown() {
+  const el = document.getElementById('axisBreakdown');
+  if (!el) return;
+  if (records.length === 0) { el.innerHTML = '<div style="color:var(--text-dim);font-size:13px">データなし</div>'; return; }
+  const avg = calcAvgScores();
+  const maxScore = 96;
+  el.innerHTML = AXES.map(ax => `
+    <div class="axis-row-admin">
+      <div class="axis-name">${AXIS_LABELS[ax]}</div>
+      <div class="axis-track"><div class="axis-fill" style="width:${(avg[ax]/maxScore)*100}%"></div></div>
+      <div class="axis-avg">${avg[ax].toFixed(1)}</div>
+    </div>`).join('');
+}
+
+// ─── AXIS DIST CHART ───
+function renderAxisDist() {
+  const ctx = document.getElementById('axisDistChart');
+  if (!ctx) return;
+  if (records.length === 0) { destroyChart('axisDist'); return; }
+
+  // Min, max, avg per axis
+  const mins = {}, maxs = {}, avgs = calcAvgScores();
+  AXES.forEach(ax => {
+    const vals = records.map(r => r.scores[ax] || 0);
+    mins[ax] = Math.min(...vals);
+    maxs[ax] = Math.max(...vals);
+  });
+
+  destroyChart('axisDist');
+  charts['axisDist'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: AXES.map(ax => AXIS_LABELS[ax]),
+      datasets: [
+        {
+          label: '最小値',
+          data: AXES.map(ax => mins[ax]),
+          backgroundColor: 'rgba(224,90,90,0.4)',
+          borderColor: '#e05a5a', borderWidth: 1,
+        },
+        {
+          label: '平均値',
+          data: AXES.map(ax => +avgs[ax].toFixed(1)),
+          backgroundColor: 'rgba(139,111,203,0.6)',
+          borderColor: '#8b6fcb', borderWidth: 1,
+        },
+        {
+          label: '最大値',
+          data: AXES.map(ax => maxs[ax]),
+          backgroundColor: 'rgba(92,200,138,0.4)',
+          borderColor: '#5cc88a', borderWidth: 1,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        x: { ticks: { color: '#555462' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { max: 96, ticks: { color: '#555462' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+// ─── RECORDS ───
+function populateFilterType() {
+  const sel = document.getElementById('filterType');
+  if (!sel) return;
+  TYPE_DEFS.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderRecords() {
+  const filterType = document.getElementById('filterType')?.value || '';
+  const sortDir = document.getElementById('filterSort')?.value || 'desc';
+  const el = document.getElementById('recordsList');
+  if (!el) return;
+
+  let filtered = records.filter(r => !filterType || r.type === filterType);
+  filtered = [...filtered].sort((a,b) => {
+    const da = new Date(a.date), db = new Date(b.date);
+    return sortDir === 'desc' ? db - da : da - db;
+  });
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>データがありません。<br>診断サイトを配布して、受診者の結果を集計してください。</p>
+    <button class="btn-sm" style="margin-top:1.5rem;" onclick="loadDemoData()">デモデータで試す</button></div>`;
+    return;
+  }
+
+  const maxScore = 96;
+  const typeColorMap = {};
+  TYPE_DEFS.forEach((t,i) => { typeColorMap[t.id] = TYPE_COLORS[i % TYPE_COLORS.length]; });
+
+  el.innerHTML = filtered.map((r, idx) => {
+    const date = new Date(r.date).toLocaleString('ja-JP', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const color = typeColorMap[r.type] || '#888790';
+    const axisRows = AXES.map(ax => {
+      const val = r.scores[ax] || 0;
+      const pct = Math.min(100, Math.round(val / maxScore * 100));
+      return `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <div style="font-size:10px;color:var(--text-dim);width:72px;flex-shrink:0;letter-spacing:1px;">${AXIS_LABELS[ax]}</div>
+          <div style="flex:1;height:5px;background:var(--surface2);position:relative;">
+            <div style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:${color};"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);width:24px;text-align:right;">${val}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="background:var(--surface);border:1px solid var(--border);padding:1.2rem 1.5rem;margin-bottom:0.75rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <div style="font-size:11px;color:var(--text-dim);">${date}</div>
+            <span style="display:inline-block;padding:0.25rem 0.8rem;background:${color}22;color:${color};font-size:12px;border:1px solid ${color}66;">
+              ${r.typeName || r.type}
+            </span>
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;">No.${filtered.length - idx}</div>
+        </div>
+        <div>${axisRows}</div>
+      </div>`;
+  }).join('');
+}
+
+// ─── HELPERS ───
+function countTypes() {
+  const c = {};
+  records.forEach(r => { c[r.type] = (c[r.type]||0) + 1; });
+  return c;
+}
+function calcAvgScores() {
+  const totals = {}; AXES.forEach(ax => { totals[ax] = 0; });
+  records.forEach(r => { AXES.forEach(ax => { totals[ax] += r.scores[ax]||0; }); });
+  const n = records.length || 1;
+  const avg = {};
+  AXES.forEach(ax => { avg[ax] = totals[ax] / n; });
+  return avg;
+}
+function destroyChart(key) {
+  if (charts[key]) { try { charts[key].destroy(); } catch(e){} delete charts[key]; }
+}
+
+// ─── ACTIONS ───
+async function refreshAll() { await loadData(); showToast('更新しました'); }
+
+function clearData() {
+  if (!confirm('全データを削除しますか？この操作は取り消せません。')) return;
+  records = []; saveData(); renderAll(); showToast('データを削除しました');
+}
+
+function exportData() {
+  if (records.length === 0) { showToast('データがありません'); return; }
+  const headers = ['id','date','type','typeName',...AXES];
+  const rows = records.map(r => [r.id, r.date, r.type, r.typeName, ...AXES.map(ax => r.scores[ax]||0)]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'photo-type-results-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSVをダウンロードしました');
+}
+
+function exportJSON() {
+  const json = JSON.stringify(records, null, 2);
+  navigator.clipboard.writeText(json).then(() => showToast('JSONをクリップボードにコピーしました'));
+}
+
+function updateExportPreview() {
+  const el = document.getElementById('exportPreview');
+  if (!el) return;
+  if (records.length === 0) { el.textContent = '（データなし）'; return; }
+  el.textContent = JSON.stringify(records, null, 2).slice(0, 800) + (records.length > 2 ? '\n...' : '');
+}
+
+function importJSON() {
+  const raw = document.getElementById('importArea').value.trim();
+  if (!raw) { showToast('データを貼り付けてください'); return; }
+  try {
+    const imported = JSON.parse(raw);
+    if (!Array.isArray(imported)) throw new Error('配列形式のJSONが必要です');
+    const existingIds = new Set(records.map(r => r.id));
+    let added = 0;
+    imported.forEach(r => {
+      if (r.id && r.type && r.scores) {
+        if (!existingIds.has(r.id)) { records.push(r); added++; }
+      }
+    });
+    saveData(); renderAll();
+    showToast(`${added}件をインポートしました（重複除外済み）`);
+    document.getElementById('importArea').value = '';
+  } catch(e) {
+    showToast('JSONの形式が正しくありません: ' + e.message);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── START ───
+init(); // loadData内でrenderAllを呼ぶので非同期で動作
+</script>
+</body>
+</html>
